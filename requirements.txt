@@ -1,0 +1,10 @@
+streamlit>=1.41.1
+duckdb>=1.4.1
+pandas
+numpy==1.26.4
+agno>=2.2.10
+python-dotenv>=1.0.0
+plotly>=5.0.0
+ydata-profiling
+streamlit-pandas-profiling
+huggingface-hub>=1.0.0
