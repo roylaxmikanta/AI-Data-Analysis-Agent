@@ -1,6 +1,8 @@
 import os
+import re
 import tempfile
 import csv
+import duckdb
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -8,9 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from dotenv import load_dotenv
-from agno.agent import Agent
-from agno.models.huggingface import HuggingFace
-from agno.tools.duckdb import DuckDbTools
+from huggingface_hub import InferenceClient
 
 # ─── Load environment variables ──────────────────────────────────────────────
 load_dotenv()
@@ -382,6 +382,125 @@ def build_visualizations(df):
             fig_ts.update_layout(**layout_defaults)
             st.plotly_chart(fig_ts, use_container_width=True)
 
+    # ── 9. Cumulative Distribution (ECDF) ────────────────────────────────
+    if numeric_cols:
+        st.markdown('<div class="section-header">📉 Cumulative Distribution (ECDF)</div>', unsafe_allow_html=True)
+        cols_per_row = 2
+        for i in range(0, len(numeric_cols), cols_per_row):
+            row_cols = st.columns(cols_per_row)
+            for j, col in enumerate(numeric_cols[i: i + cols_per_row]):
+                with row_cols[j]:
+                    fig_ecdf = px.ecdf(
+                        df, x=col,
+                        title=f"ECDF: {col}",
+                        template="plotly_dark",
+                        color_discrete_sequence=["#f093fb"],
+                    )
+                    fig_ecdf.update_layout(**layout_defaults)
+                    st.plotly_chart(fig_ecdf, use_container_width=True)
+
+    # ── 10. Bubble Chart (first 3 numeric cols) ──────────────────────────
+    if len(numeric_cols) >= 3:
+        st.markdown('<div class="section-header">🫧 Bubble Chart</div>', unsafe_allow_html=True)
+        x_c, y_c, s_c = numeric_cols[0], numeric_cols[1], numeric_cols[2]
+        color_col = cat_cols[0] if cat_cols else None
+        fig_bub = px.scatter(
+            df.dropna(subset=[x_c, y_c, s_c]),
+            x=x_c, y=y_c,
+            size=s_c,
+            color=color_col,
+            size_max=40,
+            title=f"Bubble: {x_c} vs {y_c} (size={s_c})",
+            template="plotly_dark",
+        )
+        fig_bub.update_layout(**layout_defaults)
+        st.plotly_chart(fig_bub, use_container_width=True)
+
+    # ── 11. Treemap (categorical) ─────────────────────────────────────────
+    if cat_cols and numeric_cols:
+        st.markdown('<div class="section-header">🌳 Treemap</div>', unsafe_allow_html=True)
+        tc = cat_cols[0]
+        nc = numeric_cols[0]
+        tm_df = df.groupby(tc)[nc].sum().reset_index().rename(columns={nc: "Total"})
+        fig_tree = px.treemap(
+            tm_df, path=[tc], values="Total",
+            title=f"Treemap: {tc} by {nc}",
+            template="plotly_dark",
+            color="Total",
+            color_continuous_scale="Plasma",
+        )
+        fig_tree.update_layout(**layout_defaults)
+        st.plotly_chart(fig_tree, use_container_width=True)
+
+    # ── 12. Sunburst (up to 2 cat cols) ──────────────────────────────────
+    if len(cat_cols) >= 2 and numeric_cols:
+        st.markdown('<div class="section-header">☀️ Sunburst Chart</div>', unsafe_allow_html=True)
+        try:
+            sb_df = df.groupby([cat_cols[0], cat_cols[1]])[numeric_cols[0]].sum().reset_index()
+            fig_sun = px.sunburst(
+                sb_df, path=[cat_cols[0], cat_cols[1]], values=numeric_cols[0],
+                title=f"Sunburst: {cat_cols[0]} → {cat_cols[1]} by {numeric_cols[0]}",
+                template="plotly_dark",
+                color=numeric_cols[0],
+                color_continuous_scale="Plasma",
+            )
+            fig_sun.update_layout(**layout_defaults)
+            st.plotly_chart(fig_sun, use_container_width=True)
+        except Exception:
+            pass
+
+    # ── 13. Funnel Chart (top categorical) ───────────────────────────────
+    if cat_cols:
+        st.markdown('<div class="section-header">🔽 Funnel Chart</div>', unsafe_allow_html=True)
+        fc = cat_cols[0]
+        fv = df[fc].value_counts().head(10).reset_index()
+        fv.columns = [fc, "Count"]
+        fig_fun = px.funnel(
+            fv, x="Count", y=fc,
+            title=f"Funnel: Top values in {fc}",
+            template="plotly_dark",
+            color_discrete_sequence=["#667eea"],
+        )
+        fig_fun.update_layout(**layout_defaults)
+        st.plotly_chart(fig_fun, use_container_width=True)
+
+    # ── 14. Grouped Bar (cat vs numeric) ─────────────────────────────────
+    if cat_cols and len(numeric_cols) >= 2:
+        st.markdown('<div class="section-header">📊 Grouped Bar Chart</div>', unsafe_allow_html=True)
+        try:
+            grp_df = df.groupby(cat_cols[0])[numeric_cols[:3]].mean().reset_index()
+            fig_grp = px.bar(
+                grp_df.melt(id_vars=cat_cols[0], value_vars=numeric_cols[:3]),
+                x=cat_cols[0], y="value", color="variable",
+                barmode="group",
+                title=f"Grouped Avg by {cat_cols[0]}",
+                template="plotly_dark",
+                color_discrete_sequence=px.colors.qualitative.Vivid,
+            )
+            fig_grp.update_layout(**layout_defaults)
+            st.plotly_chart(fig_grp, use_container_width=True)
+        except Exception:
+            pass
+
+    # ── 15. Numeric heatmap (pivot: cat × numeric bins) ───────────────────
+    if cat_cols and numeric_cols:
+        st.markdown('<div class="section-header">🟥 Pivot Heatmap (Category × Numeric)</div>', unsafe_allow_html=True)
+        try:
+            piv = df.pivot_table(values=numeric_cols[0], index=cat_cols[0],
+                                  aggfunc='mean').reset_index()
+            piv_sorted = piv.sort_values(numeric_cols[0], ascending=False).head(20)
+            fig_ph = px.bar(
+                piv_sorted, x=cat_cols[0], y=numeric_cols[0],
+                color=numeric_cols[0],
+                color_continuous_scale="RdBu",
+                title=f"Mean {numeric_cols[0]} by {cat_cols[0]}",
+                template="plotly_dark",
+            )
+            fig_ph.update_layout(**layout_defaults)
+            st.plotly_chart(fig_ph, use_container_width=True)
+        except Exception:
+            pass
+
 
 # ─── Helper: dataset summary stats ───────────────────────────────────────────
 def show_overview(df):
@@ -492,77 +611,115 @@ with tab2:
     build_visualizations(df)
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 3 – AI Chatbot
+# TAB 3 – AI Chatbot  (tool-free: LLM writes SQL → local duckdb → LLM explains)
 # ══════════════════════════════════════════════════════════════════════════════
+
+# Build dataset schema string once
+_schema_lines = []
+for c in df.columns:
+    _schema_lines.append(f"  {c} ({df[c].dtype})")
+_schema = "\n".join(_schema_lines)
+_sample = df.head(3).to_string(index=False)
+_SYSTEM = (
+    "You are an expert data analyst. A DuckDB table called 'uploaded_data' "
+    "holds the user's dataset.\n\n"
+    f"Schema:\n{_schema}\n\nSample rows:\n{_sample}\n\n"
+    "Rules:\n"
+    "1. To answer a question that needs data, FIRST output a DuckDB SQL query "
+    "inside a ```sql ... ``` code block — nothing else on that turn.\n"
+    "2. If you already have query results (provided in the message), interpret "
+    "them in plain English. Be concise, friendly and format numbers nicely.\n"
+    "3. If the question is purely conversational (no data needed), just answer directly."
+)
+
+def _extract_sql(text: str):
+    """Pull the first ```sql ... ``` block from LLM output."""
+    m = re.search(r"```sql\s*(.*?)\s*```", text, re.DOTALL | re.IGNORECASE)
+    if m:
+        return m.group(1).strip()
+    # fallback: bare SELECT
+    m2 = re.search(r"(SELECT\s.+)", text, re.DOTALL | re.IGNORECASE)
+    return m2.group(1).strip() if m2 else None
+
+def _run_sql(sql: str, csv_path: str):
+    """Execute SQL against the CSV via DuckDB and return (result_df, error)."""
+    try:
+        con = duckdb.connect()
+        con.execute(
+            f"CREATE OR REPLACE TABLE uploaded_data AS "
+            f"SELECT * FROM read_csv_auto('{csv_path}')"
+        )
+        result = con.execute(sql).df()
+        con.close()
+        return result, None
+    except Exception as e:
+        return None, str(e)
+
+def _chat_with_hf(messages: list) -> str:
+    """Call HuggingFace InferenceClient chat completion."""
+    client = InferenceClient(api_key=HF_API_KEY)
+    resp = client.chat.completions.create(
+        model="meta-llama/Meta-Llama-3-8B-Instruct",
+        messages=messages,
+        max_tokens=1024,
+        temperature=0.3,
+    )
+    return resp.choices[0].message.content.strip()
+
+def answer_question(user_q: str, csv_path: str) -> str:
+    """Full pipeline: ask LLM → maybe run SQL → ask LLM to explain."""
+    messages = [
+        {"role": "system", "content": _SYSTEM},
+        {"role": "user",   "content": user_q},
+    ]
+    first_reply = _chat_with_hf(messages)
+    sql = _extract_sql(first_reply)
+    if not sql:
+        return first_reply  # pure conversational answer
+
+    result_df, err = _run_sql(sql, csv_path)
+    if err:
+        return f"I tried this SQL:\n```sql\n{sql}\n```\n\nBut got an error: `{err}`"
+
+    result_str = result_df.to_string(index=False)
+    messages += [
+        {"role": "assistant", "content": first_reply},
+        {"role": "user",      "content": f"Query results:\n{result_str}\n\nPlease explain these results clearly."},
+    ]
+    explanation = _chat_with_hf(messages)
+    return f"{explanation}\n\n---\n*SQL used:*\n```sql\n{sql}\n```"
+
+
 with tab3:
     st.markdown("### 🤖 Ask Anything About Your Data")
     st.caption("Powered by Meta-Llama-3-8B via HuggingFace Inference API")
 
-    # Initialise DuckDB agent once per file
-    if "agent" not in st.session_state or st.session_state.get("agent_file") != uploaded_file.name:
-        with st.spinner("Initialising AI agent…"):
-            try:
-                duckdb_tools = DuckDbTools()
-                duckdb_tools.load_local_csv_to_table(
-                    path=temp_path,
-                    table="uploaded_data",
-                )
-                dataset_context = (
-                    f"Dataset has {df.shape[0]} rows and {df.shape[1]} columns.\n"
-                    f"Columns: {', '.join(df.columns.tolist())}\n"
-                    f"Numeric columns: {', '.join(df.select_dtypes(include=np.number).columns.tolist())}\n"
-                    f"Categorical columns: {', '.join(df.select_dtypes(include=['object']).columns.tolist())}\n"
-                    f"Sample head:\n{df.head(3).to_string(index=False)}"
-                )
-                agent = Agent(
-                    model=HuggingFace(
-                        id="meta-llama/Meta-Llama-3-8B-Instruct",
-                        api_key=HF_API_KEY,
-                        max_tokens=1024,
-                        temperature=0.3,
-                    ),
-                    tools=[duckdb_tools],
-                    system_message=(
-                        "You are an expert data analyst. You have access to a DuckDB table called "
-                        "'uploaded_data' which contains the user's dataset.\n\n"
-                        f"Dataset info:\n{dataset_context}\n\n"
-                        "When the user asks a question, use SQL via DuckDB tools to query the data "
-                        "and provide clear, concise answers. Format numbers nicely. Be friendly."
-                    ),
-                    markdown=True,
-                )
-                st.session_state.agent = agent
-                st.session_state.agent_file = uploaded_file.name
-            except Exception as e:
-                st.error(f"Failed to initialise agent: {e}")
-                st.stop()
-
-    # Chat history display
-    if "chat_history" not in st.session_state:
+    if "chat_history" not in st.session_state or st.session_state.get("chat_file") != uploaded_file.name:
         st.session_state.chat_history = []
+        st.session_state.chat_file = uploaded_file.name
 
-    chat_container = st.container()
-    with chat_container:
-        for msg in st.session_state.chat_history:
-            if msg["role"] == "user":
-                st.markdown(f"""
-                <div class="chat-label" style="text-align:right">You</div>
-                <div class="chat-user">{msg["content"]}</div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div class="chat-label">🤖 AI Analyst</div>
-                <div class="chat-assistant">{msg["content"]}</div>
-                """, unsafe_allow_html=True)
+    # Display history
+    for msg in st.session_state.chat_history:
+        if msg["role"] == "user":
+            st.markdown(f"""
+            <div class="chat-label" style="text-align:right">You</div>
+            <div class="chat-user">{msg["content"]}</div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div class="chat-label">🤖 AI Analyst</div>
+            <div class="chat-assistant">{msg["content"]}</div>
+            """, unsafe_allow_html=True)
 
-    # Suggested questions
+    # Suggested starter questions
     if not st.session_state.chat_history:
         st.markdown("**💡 Try asking:**")
+        nc0 = df.select_dtypes(include=np.number).columns
         suggestions = [
             f"What are the top 5 values in {columns[0]}?",
             "Give me a summary of this dataset.",
             "Which column has the most missing values?",
-            "What is the average of each numeric column?",
+            f"What is the average of {nc0[0] if len(nc0) else columns[0]}?",
         ]
         s_cols = st.columns(2)
         for i, s in enumerate(suggestions):
@@ -571,20 +728,16 @@ with tab3:
                     st.session_state.pending_query = s
                     st.rerun()
 
-    # Handle pending suggestion clicks
+    # Handle suggestion button clicks
     if "pending_query" in st.session_state:
-        query = st.session_state.pop("pending_query")
-        st.session_state.chat_history.append({"role": "user", "content": query})
+        q = st.session_state.pop("pending_query")
+        st.session_state.chat_history.append({"role": "user", "content": q})
         with st.spinner("Thinking…"):
-            try:
-                response = st.session_state.agent.run(query)
-                answer = response.content if hasattr(response, 'content') else str(response)
-            except Exception as e:
-                answer = f"⚠️ Error: {e}"
-        st.session_state.chat_history.append({"role": "assistant", "content": answer})
+            ans = answer_question(q, temp_path)
+        st.session_state.chat_history.append({"role": "assistant", "content": ans})
         st.rerun()
 
-    # Chat input
+    # Chat input form
     with st.form("chat_form", clear_on_submit=True):
         col_inp, col_btn = st.columns([5, 1])
         with col_inp:
@@ -599,12 +752,8 @@ with tab3:
     if submitted and user_query.strip():
         st.session_state.chat_history.append({"role": "user", "content": user_query})
         with st.spinner("Thinking…"):
-            try:
-                response = st.session_state.agent.run(user_query)
-                answer = response.content if hasattr(response, 'content') else str(response)
-            except Exception as e:
-                answer = f"⚠️ Error: {e}"
-        st.session_state.chat_history.append({"role": "assistant", "content": answer})
+            ans = answer_question(user_query, temp_path)
+        st.session_state.chat_history.append({"role": "assistant", "content": ans})
         st.rerun()
 
     if st.session_state.chat_history and st.button("🗑️ Clear Chat"):
