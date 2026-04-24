@@ -1,90 +1,141 @@
+<div align="center">
+
 # 📊 AI Data Analysis Agent
 
-> An intelligent, no-code data analysis platform powered by **Qwen2.5-72B** via HuggingFace Inference API — upload any CSV/Excel dataset and instantly get interactive visualizations, statistical profiling, and an AI chatbot that can answer natural language questions about your data.
+### Upload any dataset. Get instant insights, beautiful visualizations, and AI-powered answers — all for free.
+
+[![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.41%2B-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
+[![HuggingFace](https://img.shields.io/badge/HuggingFace-LLaMA--3--8B-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co)
+[![DuckDB](https://img.shields.io/badge/DuckDB-1.4%2B-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)](https://duckdb.org)
+[![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?style=for-the-badge&logo=plotly&logoColor=white)](https://plotly.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
+
+<br/>
+
+> **No paid API. No coding required. Just upload and explore.**
+
+</div>
+
+---
+
+## 🌟 What Is This?
+
+**AI Data Analysis Agent** is a fully local, free-to-use data exploration platform built with Streamlit. Upload a CSV or Excel file and get:
+
+- 📋 **Instant dataset overview** with smart statistics
+- 📈 **15+ interactive charts** auto-generated from your data
+- 🤖 **An AI chatbot** that understands your data and answers questions in plain English — powered by Meta LLaMA 3 via HuggingFace
+
+No OpenAI key. No monthly bill. Just drop in your HuggingFace free API key and go.
+
+---
+
+## 🖥️ Demo
+
+<div align="center">
+
+| Tab 1 — Dataset Overview | Tab 2 — Visualizations | Tab 3 — AI Chatbot |
+|:---:|:---:|:---:|
+| Metrics, data preview, column info, descriptive stats | 15+ interactive Plotly charts | Natural language Q&A over your data |
+
+</div>
 
 ---
 
 ## ✨ Features
 
-### 🗂️ Tab 1 — Dataset Overview
-- **Key metrics** at a glance: rows, columns, numeric/categorical count, missing values %, duplicate rows
-- **Interactive data preview** (first 50 rows)
-- **Descriptive statistics** — mean, std, min, max, quartiles for all columns
-- **Column info table** — data type, null count, null %, unique values, sample value per column
-
-### 📈 Tab 2 — Full Visualizations
-Auto-generated charts powered by **Plotly**:
-
-| Chart Type | Description |
+### 🗂️ Tab 1 · Dataset Overview
+| Feature | Description |
 |---|---|
-| Missing Values Bar | Percentage of nulls per column |
-| Histograms + Box | Distribution of every numeric column |
-| Box Plots | Side-by-side for all numeric columns |
-| Correlation Heatmap | Pearson correlation matrix |
-| Scatter Matrix | Pairplot of first 5 numeric columns |
-| Violin Plots | Distribution shape + outliers |
-| Bar Charts | Top-20 value counts for categorical columns |
-| Pie Charts | Proportion view for low-cardinality columns |
-| Time Series | Auto-detected date columns plotted over time |
+| **Key Metric Cards** | Rows, columns, numeric count, missing %, duplicate rows |
+| **Data Preview** | First 50 rows in an interactive sortable table |
+| **Descriptive Statistics** | Mean, std, min, max, quartiles for all columns |
+| **Column Info Table** | Data type, null count, null%, unique values, sample value |
 
-### 🤖 Tab 3 — AI Chatbot
-- Ask **natural language questions** about your dataset
-- Powered by **Qwen/Qwen2.5-72B-Instruct** via HuggingFace Inference API
-- Uses **DuckDB** under the hood — the AI writes SQL and runs it against your data
-- Suggested starter questions auto-generated from column names
-- Full **chat history** within the session
-- Clear chat button to start fresh
+### 📈 Tab 2 · Visualizations (15 Chart Types)
+| # | Chart | When shown |
+|---|---|---|
+| 1 | **Missing Values Bar** | Always |
+| 2 | **Histograms + Marginal Box** | Numeric columns |
+| 3 | **Box Plots** | Numeric columns |
+| 4 | **Correlation Heatmap** | ≥ 2 numeric cols |
+| 5 | **Scatter Matrix (Pairplot)** | ≥ 2 numeric cols |
+| 6 | **Violin Plots** | Numeric columns |
+| 7 | **Value Count Bar Charts** | Categorical columns |
+| 8 | **Pie Charts** | Low-cardinality categoricals (≤10 unique) |
+| 9 | **Time Series Line Charts** | Date-type columns |
+| 10 | **ECDF (Cumulative Distribution)** | Numeric columns |
+| 11 | **Bubble Chart** | ≥ 3 numeric cols |
+| 12 | **Treemap** | Cat + numeric columns |
+| 13 | **Sunburst Chart** | ≥ 2 categorical cols |
+| 14 | **Funnel Chart** | Categorical columns |
+| 15 | **Grouped Bar Chart** | Cat + ≥ 2 numeric cols |
+| 16 | **Pivot Heatmap** | Cat + numeric columns |
+
+### 🤖 Tab 3 · AI Chatbot
+- Ask questions in **plain English** — e.g. *"What is the average revenue by region?"*
+- The AI writes **DuckDB SQL**, runs it locally, then explains the results in friendly language
+- Shows the **SQL query used** for full transparency
+- **Suggested starter questions** based on your columns
+- Persistent **chat history** within a session with a clear button
+- Works 100% on **HuggingFace free tier** — no paid API needed
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| UI Framework | [Streamlit](https://streamlit.io/) |
-| AI Agent | [Agno](https://github.com/agno-agi/agno) |
-| LLM | Qwen/Qwen2.5-72B-Instruct via HuggingFace Inference API |
-| Query Engine | [DuckDB](https://duckdb.org/) |
-| Visualization | [Plotly](https://plotly.com/python/) |
-| Data | [Pandas](https://pandas.pydata.org/) + NumPy |
-| Secrets | [python-dotenv](https://pypi.org/project/python-dotenv/) |
+| Layer | Technology | Purpose |
+|---|---|---|
+| **UI** | [Streamlit](https://streamlit.io) | Web interface & interactivity |
+| **AI / LLM** | [Meta LLaMA 3 8B Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct) | Natural language understanding & SQL generation |
+| **AI Client** | [huggingface-hub InferenceClient](https://huggingface.co/docs/huggingface_hub) | Free serverless LLM inference |
+| **Query Engine** | [DuckDB](https://duckdb.org) | In-process SQL execution on CSV data |
+| **Visualization** | [Plotly](https://plotly.com/python) | 15+ interactive chart types |
+| **Data** | [Pandas](https://pandas.pydata.org) + [NumPy](https://numpy.org) | Data loading & processing |
+| **Secrets** | [python-dotenv](https://pypi.org/project/python-dotenv) | Secure `.env`-based API key loading |
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone the repository
+### Prerequisites
+- Python 3.10 or higher
+- A free [HuggingFace account](https://huggingface.co/join)
+
+### 1 · Clone the repository
 
 ```bash
 git clone https://github.com/roylaxmikanta/AI-Data-Analysis-Agent.git
 cd AI-Data-Analysis-Agent
 ```
 
-### 2. Install dependencies
+### 2 · Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Set up your HuggingFace API key
+### 3 · Create your `.env` file
 
-Create a `.env` file in the project root:
+In the project root, create a file named `.env`:
 
-```bash
-# .env
+```env
 HF_API_KEY=your_huggingface_api_key_here
 ```
 
-> 🔑 Get your free API key from [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)  
-> ✅ The `.env` file is already listed in `.gitignore` — your key will **never** be committed to Git.
+> 🔑 **Get a free key →** [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)  
+> Select **"Read"** access — that's all you need.
 
-### 4. Run the app
+> ✅ `.env` is already in `.gitignore`. Your key will **never** be committed to Git.
+
+### 4 · Run the app
 
 ```bash
 streamlit run ai_data_analyst.py
 ```
 
-Open your browser at **http://localhost:8501**
+Open your browser at **[http://localhost:8501](http://localhost:8501)** 🎉
 
 ---
 
@@ -93,80 +144,109 @@ Open your browser at **http://localhost:8501**
 ```
 AI-Data-Analysis-Agent/
 │
-├── ai_data_analyst.py     # Main Streamlit application
-├── requirements.txt       # Python dependencies
-├── .env                   # 🔒 Your API key (NOT committed to Git)
-├── .gitignore             # Ignores .env and other sensitive files
-└── README.md              # This file
+├── 📄 ai_data_analyst.py    ← Main Streamlit application (all logic)
+├── 📄 requirements.txt      ← Python dependencies
+├── 🔒 .env                  ← Your API key (NOT committed to Git)
+├── 📄 .gitignore            ← Excludes .env and other sensitive files
+└── 📄 README.md             ← You are here
 ```
 
 ---
 
-## 🔐 Security
+## 🔐 Security & Privacy
 
-- Your HuggingFace API key lives **only** in `.env` on your local machine
-- `.env` is excluded from version control via `.gitignore`
-- No API key input is shown in the app UI — zero exposure
+| Concern | How it's handled |
+|---|---|
+| **API Key exposure** | Loaded from `.env` at runtime, never shown in UI |
+| **Git safety** | `.env` excluded from version control via `.gitignore` |
+| **Data privacy** | Your uploaded file stays **100% local** — saved to a temp file, never sent to any server |
+| **LLM calls** | Only the column schema + sample rows are sent to HuggingFace for context |
+
+---
+
+## 💡 How the AI Chatbot Works
+
+The chatbot uses a **tool-free 3-step pipeline** that works on HuggingFace's free tier:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  User asks a question in natural language               │
+│         ↓                                               │
+│  LLaMA-3-8B generates a DuckDB SQL query                │
+│         ↓                                               │
+│  SQL runs locally on your data via DuckDB (0 ms)        │
+│         ↓                                               │
+│  LLaMA-3-8B explains the result in plain English        │
+│         ↓                                               │
+│  User sees: explanation + SQL used for transparency     │
+└─────────────────────────────────────────────────────────┘
+```
+
+> No tool-calling API is needed. The LLM just writes SQL as text, which we parse and execute ourselves.
 
 ---
 
 ## 📦 Dependencies
 
 ```
-streamlit>=1.41.1
-duckdb>=1.4.1
-pandas
-numpy==1.26.4
-agno>=2.2.10
-python-dotenv>=1.0.0
-plotly>=5.0.0
-ydata-profiling
-streamlit-pandas-profiling
-huggingface-hub>=1.0.0
+streamlit>=1.41.1        # Web UI framework
+duckdb>=1.4.1            # In-process SQL engine
+pandas                   # Data loading and manipulation
+numpy==1.26.4            # Numerical computing
+plotly>=5.0.0            # Interactive visualizations
+python-dotenv>=1.0.0     # .env file loading
+huggingface-hub>=1.0.0   # HuggingFace Inference API client
+ydata-profiling          # Advanced profiling utilities
+streamlit-pandas-profiling  # Streamlit integration
 ```
 
 ---
 
-## 🤖 Why Qwen2.5-72B-Instruct?
+## 🎯 Example Questions to Ask the Chatbot
 
-The HuggingFace free Inference API requires a model that supports **function/tool calling** (needed for DuckDB tool use). After testing:
-
-| Model | Tool Calling | Result |
-|---|---|---|
-| `meta-llama/Meta-Llama-3-8B-Instruct` | ❌ | Bad request error with tools |
-| `Qwen/Qwen2.5-72B-Instruct` | ✅ | Works perfectly |
-
----
-
-## 🎯 Usage Example
-
-1. **Upload** a CSV or Excel file from the sidebar
-2. Go to **🗂️ Dataset Overview** to see stats, data types, and missing values
-3. Go to **📈 Visualizations** to explore all auto-generated charts
-4. Go to **🤖 AI Chatbot** and ask questions like:
-   - *"What are the top 5 categories by revenue?"*
-   - *"Which rows have missing values?"*
-   - *"Show me the average salary by department."*
-   - *"How many unique customers are there?"*
-
----
-
-## 📸 Screenshots
-
-> Upload your dataset and explore instantly — dark-themed, glassmorphism UI with interactive Plotly charts.
+```
+"What are the top 5 products by sales?"
+"How many rows have missing values?"
+"What is the average age grouped by gender?"
+"Show me the minimum and maximum salary."
+"Which category appears most frequently?"
+"How many unique customers are there?"
+"What is the total revenue by region?"
+```
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change.
+Contributions are welcome! Here's how:
+
+1. **Fork** the repository
+2. **Create** a feature branch: `git checkout -b feature/your-feature`
+3. **Commit** your changes: `git commit -m 'feat: add something awesome'`
+4. **Push** to the branch: `git push origin feature/your-feature`
+5. **Open** a Pull Request
+
+Please open an issue first for major changes to discuss the approach.
 
 ---
 
 ## 📄 License
 
-[MIT](LICENSE)
+This project is licensed under the [MIT License](LICENSE) — free to use, modify and distribute.
 
 ---
 
-<p align="center">Made with ❤️ using Streamlit + HuggingFace + DuckDB</p>
+## 👨‍💻 Author
+
+**Laxmikanta Roy**  
+[![GitHub](https://img.shields.io/badge/GitHub-roylaxmikanta-181717?style=flat-square&logo=github)](https://github.com/roylaxmikanta)
+
+---
+
+<div align="center">
+
+**⭐ Star this repo if you found it useful!**
+
+*Built with ❤️ using Streamlit · HuggingFace · DuckDB · Plotly*
+
+</div>
