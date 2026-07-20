@@ -14,15 +14,16 @@ from huggingface_hub import InferenceClient
 
 # ─── Load environment variables ──────────────────────────────────────────────
 load_dotenv()
-HF_API_KEY = os.getenv("HF_API_KEY")
+# HF_API_KEY = os.getenv("HF_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY") 
 
 # ─── Page config ─────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI Data Analysis Agent",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
-)
+    initial_sidebar_state="expanded", 
+) 
 
 # ─── Custom CSS ──────────────────────────────────────────────────────────────
 st.markdown("""
@@ -564,14 +565,20 @@ with st.sidebar:
         help="Upload a CSV or Excel file to begin analysis",
     )
     st.markdown("---")
-    if HF_API_KEY:
-        st.success("✅ HuggingFace API connected")
+    # if HF_API_KEY:
+    #     st.success("✅ HuggingFace API connected")
+    # else:
+    #     st.error("❌ HF_API_KEY not found in .env")
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    if GROQ_API_KEY:   
+        st.success("✅ Groq API connected")
     else:
-        st.error("❌ HF_API_KEY not found in .env")
+        st.error("❌ GROQ_API_KEY not found in .env")
     st.markdown("---")
-    st.markdown("**Model:** meta-llama/Meta-Llama-3-8B-Instruct")
-    st.markdown("**Powered by:** HuggingFace Inference API")
-
+    # st.markdown("**Model:** meta-llama/Meta-Llama-3-8B-Instruct")
+    st.markdown("**Model:** llama-3.3-70b-versatile")
+    st.markdown("**Powered by:** Groq Inference API")
+ 
 
 # ─── Main content ─────────────────────────────────────────────────────────────
 st.markdown('<div class="hero-header">📊 AI Data Analysis Agent</div>', unsafe_allow_html=True)
@@ -586,7 +593,7 @@ if "processed_data" not in st.session_state or st.session_state.get("last_file")
     with st.spinner("Processing your dataset…"):
         temp_path, columns, df = preprocess_and_save(uploaded_file)
     if temp_path is None:
-        st.stop()
+        st.stop() 
     st.session_state.processed_data = (temp_path, columns, df)
     st.session_state.last_file = uploaded_file.name
     st.session_state.chat_history = []
@@ -620,6 +627,17 @@ for c in df.columns:
     _schema_lines.append(f"  {c} ({df[c].dtype})")
 _schema = "\n".join(_schema_lines)
 _sample = df.head(3).to_string(index=False)
+# _SYSTEM = (
+#     "You are an expert data analyst. A DuckDB table called 'uploaded_data' "
+#     "holds the user's dataset.\n\n"
+#     f"Schema:\n{_schema}\n\nSample rows:\n{_sample}\n\n"
+#     "Rules:\n"
+#     "1. To answer a question that needs data, FIRST output a DuckDB SQL query "
+#     "inside a ```sql ... ``` code block — nothing else on that turn.\n"
+#     "2. If you already have query results (provided in the message), interpret "
+#     "them in plain English. Be concise, friendly and format numbers nicely.\n"
+#     "3. If the question is purely conversational (no data needed), just answer directly."
+# )
 _SYSTEM = (
     "You are an expert data analyst. A DuckDB table called 'uploaded_data' "
     "holds the user's dataset.\n\n"
@@ -629,7 +647,18 @@ _SYSTEM = (
     "inside a ```sql ... ``` code block — nothing else on that turn.\n"
     "2. If you already have query results (provided in the message), interpret "
     "them in plain English. Be concise, friendly and format numbers nicely.\n"
-    "3. If the question is purely conversational (no data needed), just answer directly."
+    "3. If the question is purely conversational (no data needed), just answer directly.\n"
+    "4. IMPORTANT DuckDB syntax rules:\n"
+    "   - For counting missing/null values per column, prefer this pattern:\n"
+    "     SELECT 'col1' AS column_name, SUM(CASE WHEN col1 IS NULL THEN 1 ELSE 0 END) AS missing_count FROM uploaded_data\n"
+    "     UNION ALL SELECT 'col2', SUM(CASE WHEN col2 IS NULL THEN 1 ELSE 0 END) FROM uploaded_data ...\n"
+    "   - Do NOT use UNPIVOT with 'EXCLUDE NULLS' — this is invalid syntax.\n"
+    "5. Some numeric-looking columns (e.g. budget, revenue, popularity, runtime, "
+    "vote_average, vote_count) may be stored as VARCHAR/TEXT due to messy source data. "
+    "ALWAYS wrap numeric aggregate functions (AVG, SUM, MIN, MAX) around these columns "
+    "with TRY_CAST(...AS DOUBLE), e.g.: AVG(TRY_CAST(budget AS DOUBLE)). "
+    "TRY_CAST returns NULL for values that can't convert instead of raising an error, "
+    "so use it defensively on any column that might not be purely numeric."
 )
 
 def _extract_sql(text: str):
@@ -641,13 +670,28 @@ def _extract_sql(text: str):
     m2 = re.search(r"(SELECT\s.+)", text, re.DOTALL | re.IGNORECASE)
     return m2.group(1).strip() if m2 else None
 
+# def _run_sql(sql: str, csv_path: str):
+#     """Execute SQL against the CSV via DuckDB and return (result_df, error)."""
+#     try:
+#         con = duckdb.connect()
+#         con.execute(
+#             f"CREATE OR REPLACE TABLE uploaded_data AS "
+#             f"SELECT * FROM read_csv_auto('{csv_path}')"
+#         )
+#         result = con.execute(sql).df()
+#         con.close()
+#         return result, None
+#     except Exception as e:
+#         return None, str(e)
+
 def _run_sql(sql: str, csv_path: str):
     """Execute SQL against the CSV via DuckDB and return (result_df, error)."""
     try:
         con = duckdb.connect()
         con.execute(
             f"CREATE OR REPLACE TABLE uploaded_data AS "
-            f"SELECT * FROM read_csv_auto('{csv_path}')"
+            f"SELECT * FROM read_csv('{csv_path}', ignore_errors=true, "
+            f"types={{'popularity': 'VARCHAR', 'budget': 'VARCHAR', 'revenue': 'VARCHAR'}})"
         )
         result = con.execute(sql).df()
         con.close()
@@ -655,16 +699,30 @@ def _run_sql(sql: str, csv_path: str):
     except Exception as e:
         return None, str(e)
 
+# def _chat_with_hf(messages: list) -> str:
+#     """Call HuggingFace InferenceClient chat completion."""
+#     client = InferenceClient(api_key=HF_API_KEY)
+#     resp = client.chat.completions.create(
+#         model="meta-llama/Meta-Llama-3-8B-Instruct",
+#         messages=messages,
+#         max_tokens=1024,
+#         temperature=0.3,
+#     )
+#     return resp.choices[0].message.content.strip()
+
+from groq import Groq
+import os
+
 def _chat_with_hf(messages: list) -> str:
-    """Call HuggingFace InferenceClient chat completion."""
-    client = InferenceClient(api_key=HF_API_KEY)
+    """Call Groq chat completion."""
+    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     resp = client.chat.completions.create(
-        model="meta-llama/Meta-Llama-3-8B-Instruct",
+        model="llama-3.3-70b-versatile",
         messages=messages,
         max_tokens=1024,
         temperature=0.3,
     )
-    return resp.choices[0].message.content.strip()
+    return resp.choices[0].message.content
 
 def answer_question(user_q: str, csv_path: str) -> str:
     """Full pipeline: ask LLM → maybe run SQL → ask LLM to explain."""
@@ -687,29 +745,50 @@ def answer_question(user_q: str, csv_path: str) -> str:
         {"role": "user",      "content": f"Query results:\n{result_str}\n\nPlease explain these results clearly."},
     ]
     explanation = _chat_with_hf(messages)
-    return f"{explanation}\n\n---\n*SQL used:*\n```sql\n{sql}\n```"
+    # return f"{explanation}\n\n---\n*SQL used:*\n```sql\n{sql}\n```"
+    return explanation
 
 
+
+# with tab3:
+#     st.markdown("### 🤖 Ask Anything About Your Data")
+#     st.caption("Powered by Meta-Llama-3-8B via HuggingFace Inference API")
 with tab3:
     st.markdown("### 🤖 Ask Anything About Your Data")
-    st.caption("Powered by Meta-Llama-3-8B via HuggingFace Inference API")
+    st.caption("Powered by Llama-3.3-70B via Groq Inference API")
 
     if "chat_history" not in st.session_state or st.session_state.get("chat_file") != uploaded_file.name:
         st.session_state.chat_history = []
         st.session_state.chat_file = uploaded_file.name
 
     # Display history
+    # for msg in st.session_state.chat_history:
+    #     if msg["role"] == "user":
+    #         st.markdown(f"""
+    #         <div class="chat-label" style="text-align:right">You</div>
+    #         <div class="chat-user">{msg["content"]}</div>
+    #         """, unsafe_allow_html=True)
+    #     else:
+    #         st.markdown(f"""
+    #         <div class="chat-label">🤖 AI Analyst</div>
+    #         <div class="chat-assistant">{msg["content"]}</div>
+    #         """, unsafe_allow_html=True)
     for msg in st.session_state.chat_history:
         if msg["role"] == "user":
-            st.markdown(f"""
-            <div class="chat-label" style="text-align:right">You</div>
-            <div class="chat-user">{msg["content"]}</div>
-            """, unsafe_allow_html=True)
+            st.markdown(
+                '<div class="chat-label" style="text-align:right">You</div>',
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                f'<div class="chat-user">{msg["content"]}</div>',
+                unsafe_allow_html=True
+            )
         else:
-            st.markdown(f"""
-            <div class="chat-label">🤖 AI Analyst</div>
-            <div class="chat-assistant">{msg["content"]}</div>
-            """, unsafe_allow_html=True)
+            st.markdown(
+                '<div class="chat-label">🤖 AI Analyst</div>',
+                unsafe_allow_html=True
+            )
+            st.markdown(msg["content"])  # normal markdown, no raw div wrapper — renders code blocks properly
 
     # Suggested starter questions
     if not st.session_state.chat_history:
