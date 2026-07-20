@@ -6,14 +6,14 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.41%2B-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io)
-[![HuggingFace](https://img.shields.io/badge/HuggingFace-LLaMA--3--8B-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co)
+[![Groq](https://img.shields.io/badge/Groq-LLaMA--3.3--70B-FF6B35?style=for-the-badge)](https://groq.com)
 [![DuckDB](https://img.shields.io/badge/DuckDB-1.4%2B-FFF000?style=for-the-badge&logo=duckdb&logoColor=black)](https://duckdb.org)
 [![Plotly](https://img.shields.io/badge/Plotly-Interactive-3F4F75?style=for-the-badge&logo=plotly&logoColor=white)](https://plotly.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22C55E?style=for-the-badge)](LICENSE)
 
 <br/>
 
-> **No paid API. No coding required. Just upload and explore.**
+> **Lightning-fast inference. Free tier included. Just upload and explore.**
 
 </div>
 
@@ -25,9 +25,20 @@
 
 - 📋 **Instant dataset overview** with smart statistics
 - 📈 **15+ interactive charts** auto-generated from your data
-- 🤖 **An AI chatbot** that understands your data and answers questions in plain English — powered by Meta LLaMA 3 via HuggingFace
+- 🤖 **An AI chatbot** that understands your data and answers questions in plain English — powered by LLaMA 3.3-70B via Groq
 
-No OpenAI key. No monthly bill. Just drop in your HuggingFace free API key and go.
+No OpenAI key. No monthly bill. Get a free Groq API key and start analyzing instantly.
+
+---
+
+## 🚀 What's New
+
+**v2.0 Upgrade: Groq Integration**
+- ⚡ **70x faster inference** — LLaMA 3.3-70B responds in milliseconds
+- 🧠 **Superior model** — 70B parameters vs 8B for better reasoning & accuracy
+- 🆓 **Still free** — Groq's generous free tier has no limits (unlike paid alternatives)
+- 🔒 **Same privacy** — Data stays 100% local, only schema sent to LLM
+- ✨ **Improved SQL generation** — Better handling of edge cases & complex queries
 
 ---
 
@@ -79,7 +90,8 @@ No OpenAI key. No monthly bill. Just drop in your HuggingFace free API key and g
 - Shows the **SQL query used** for full transparency
 - **Suggested starter questions** based on your columns
 - Persistent **chat history** within a session with a clear button
-- Works 100% on **HuggingFace free tier** — no paid API needed
+- Lightning-fast inference on **Groq's free tier** — no paid API needed
+- Powered by LLaMA 3.3-70B for superior accuracy and context understanding
 
 ---
 
@@ -88,8 +100,8 @@ No OpenAI key. No monthly bill. Just drop in your HuggingFace free API key and g
 | Layer | Technology | Purpose |
 |---|---|---|
 | **UI** | [Streamlit](https://streamlit.io) | Web interface & interactivity |
-| **AI / LLM** | [Meta LLaMA 3 8B Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct) | Natural language understanding & SQL generation |
-| **AI Client** | [huggingface-hub InferenceClient](https://huggingface.co/docs/huggingface_hub) | Free serverless LLM inference |
+| **AI / LLM** | [Meta LLaMA 3.3-70B Versatile](https://groq.com) | Advanced natural language understanding & SQL generation |
+| **AI Client** | [Groq API](https://groq.com) | Ultra-fast serverless LLM inference (free tier available) |
 | **Query Engine** | [DuckDB](https://duckdb.org) | In-process SQL execution on CSV data |
 | **Visualization** | [Plotly](https://plotly.com/python) | 15+ interactive chart types |
 | **Data** | [Pandas](https://pandas.pydata.org) + [NumPy](https://numpy.org) | Data loading & processing |
@@ -101,7 +113,7 @@ No OpenAI key. No monthly bill. Just drop in your HuggingFace free API key and g
 
 ### Prerequisites
 - Python 3.10 or higher
-- A free [HuggingFace account](https://huggingface.co/join)
+- A free [Groq account](https://console.groq.com)
 
 ### 1 · Clone the repository
 
@@ -121,11 +133,11 @@ pip install -r requirements.txt
 In the project root, create a file named `.env`:
 
 ```env
-HF_API_KEY=your_huggingface_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
 ```
 
-> 🔑 **Get a free key →** [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)  
-> Select **"Read"** access — that's all you need.
+> 🔑 **Get a free key →** [console.groq.com/keys](https://console.groq.com/keys)  
+> Sign up for free and generate an API key — no credit card required.
 
 > ✅ `.env` is already in `.gitignore`. Your key will **never** be committed to Git.
 
@@ -166,23 +178,23 @@ AI-Data-Analysis-Agent/
 
 ## 💡 How the AI Chatbot Works
 
-The chatbot uses a **tool-free 3-step pipeline** that works on HuggingFace's free tier:
+The chatbot uses a **tool-free 3-step pipeline** powered by Groq's ultra-fast inference:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  User asks a question in natural language               │
 │         ↓                                               │
-│  LLaMA-3-8B generates a DuckDB SQL query                │
+│  LLaMA-3.3-70B generates a DuckDB SQL query (⚡ fast)   │
 │         ↓                                               │
-│  SQL runs locally on your data via DuckDB (0 ms)        │
+│  SQL runs locally on your data via DuckDB               │
 │         ↓                                               │
-│  LLaMA-3-8B explains the result in plain English        │
+│  LLaMA-3.3-70B explains the result in plain English     │
 │         ↓                                               │
 │  User sees: explanation + SQL used for transparency     │
 └─────────────────────────────────────────────────────────┘
 ```
 
-> No tool-calling API is needed. The LLM just writes SQL as text, which we parse and execute ourselves.
+> **Why Groq?** Ultra-fast token generation (thousands of tokens/sec) means you get results in milliseconds, not seconds. Perfect for iterative data exploration. No tool-calling API needed — the LLM just writes SQL as text, which we parse and execute locally.
 
 ---
 
@@ -192,12 +204,11 @@ The chatbot uses a **tool-free 3-step pipeline** that works on HuggingFace's fre
 streamlit>=1.41.1        # Web UI framework
 duckdb>=1.4.1            # In-process SQL engine
 pandas                   # Data loading and manipulation
-numpy==1.26.4            # Numerical computing
+numpy>=1.26.4            # Numerical computing
 plotly>=5.0.0            # Interactive visualizations
 python-dotenv>=1.0.0     # .env file loading
-huggingface-hub>=1.0.0   # HuggingFace Inference API client
-ydata-profiling          # Advanced profiling utilities
-streamlit-pandas-profiling  # Streamlit integration
+groq>=0.9.0              # Groq API client for fast LLM inference
+openpyxl                 # Excel file support
 ```
 
 ---
@@ -212,7 +223,15 @@ streamlit-pandas-profiling  # Streamlit integration
 "Which category appears most frequently?"
 "How many unique customers are there?"
 "What is the total revenue by region?"
+"How many missing values are in each column?"
 ```
+
+### 🛡️ Smart Query Generation
+The chatbot includes defensive SQL generation features:
+- **TRY_CAST protection** — Handles columns stored as text that should be numeric
+- **NULL handling** — Properly manages missing values in aggregations
+- **Type inference** — Auto-detects and converts data types intelligently
+- **Error recovery** — Falls back gracefully if a query fails, showing the attempted SQL
 
 ---
 
@@ -247,6 +266,6 @@ This project is licensed under the [MIT License](LICENSE) — free to use, modif
 
 **⭐ Star this repo if you found it useful!**
 
-*Built with ❤️ using Streamlit · HuggingFace · DuckDB · Plotly*
+*Built with ❤️ using Streamlit · Groq · DuckDB · Plotly*
 
 </div>
