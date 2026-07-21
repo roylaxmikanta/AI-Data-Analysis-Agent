@@ -8,3 +8,4 @@ plotly>=5.0.0
 ydata-profiling
 streamlit-pandas-profiling
 huggingface-hub>=1.0.0
+groq
